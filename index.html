@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreexOfficial DeepSeek Chat</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Free<span>x</span>Official <span class="sub">DeepSeek Chat</span></div>
+  <div id="statusPill" class="status-pill unknown">● проверка соединения…</div>
+  <div class="spacer"></div>
+  <button id="newChatBtn" class="icon-btn" title="Новый чат">+ Новый чат</button>
+  <button id="openSettings" class="icon-btn">⚙ Настройки</button>
+</header>
+
+<main id="chatLog"></main>
+
+<form id="composer" class="composer">
+  <select id="modelSelect">
+    <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+    <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+  </select>
+  <textarea id="composerInput" placeholder="Сообщение…" rows="1"></textarea>
+  <button type="submit" id="sendBtn">Отправить</button>
+</form>
+
+<div id="settingsOverlay" class="overlay"></div>
+<aside id="settingsDrawer">
+  <div class="settings-head">
+    <strong>⚙ Настройки подключения</strong>
+    <button id="closeSettings" class="btn">Закрыть</button>
+  </div>
+
+  <div class="settings-section">
+    <p class="warn-box">⚠ Ключ используется только в текущей вкладке браузера. Не вводите ключ на чужом или общем устройстве. Ключ хранится только в памяти страницы и исчезает при перезагрузке — никуда не сохраняется.</p>
+    <label for="apiKeyInput">Свой API-ключ DeepSeek (необязательно)</label>
+    <input id="apiKeyInput" type="password" placeholder="sk-…" autocomplete="off">
+    <div class="settings-actions">
+      <button id="useKeyBtn" class="btn primary">Использовать в этой вкладке</button>
+      <button id="forgetKeyBtn" class="btn">Забыть ключ</button>
+    </div>
+    <p id="keySourceNote" class="note"></p>
+  </div>
+
+  <div class="settings-section">
+    <label>Модель по умолчанию</label>
+    <p class="note">Актуальные модели DeepSeek API — <code>deepseek-v4-flash</code> и <code>deepseek-v4-pro</code>. Старые имена <code>deepseek-chat</code>/<code>deepseek-reasoner</code> отключаются 24.07.2026.</p>
+  </div>
+
+  <div class="settings-section">
+    <label>Базовый адрес API</label>
+    <p class="note"><code>https://api.deepseek.com</code> — запросы идут через локальный сервер-прокси этой страницы, ключ никогда не покидает сервер в сторону браузера.</p>
+  </div>
+</aside>
+
+<script src="app.js"></script>
+</body>
+</html>
