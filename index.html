@@ -35,8 +35,19 @@
   </div>
 
   <div class="settings-section">
+    <label>Как получить ключ DeepSeek</label>
+    <ol class="howto">
+      <li><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a> → войти (можно через GitHub/Google)</li>
+      <li>Слева меню → <strong>API keys</strong> → <strong>Create new API key</strong></li>
+      <li>Скопировать ключ (показывается один раз) и вставить в поле ниже</li>
+      <li>Пополнить баланс: <strong>Top up</strong> — цены низкие, обычно доллара достаточно надолго</li>
+    </ol>
+    <p class="note">Официальные цены: <a href="https://api-docs.deepseek.com/quick_start/pricing" target="_blank" rel="noopener">api-docs.deepseek.com/quick_start/pricing</a>. У DeepSeek пиковые/непиковые часы — в непиковые (по UTC вне 1:00–4:00 и 6:00–10:00) дешевле. Один из самых дешёвых API среди крупных моделей на рынке.</p>
+  </div>
+
+  <div class="settings-section">
     <p class="warn-box">⚠ Ключ используется только в текущей вкладке браузера. Не вводите ключ на чужом или общем устройстве. Ключ хранится только в памяти страницы и исчезает при перезагрузке — никуда не сохраняется.</p>
-    <label for="apiKeyInput">Свой API-ключ DeepSeek (необязательно)</label>
+    <label for="apiKeyInput">Свой API-ключ DeepSeek</label>
     <input id="apiKeyInput" type="password" placeholder="sk-…" autocomplete="off">
     <div class="settings-actions">
       <button id="useKeyBtn" class="btn primary">Использовать в этой вкладке</button>
@@ -52,7 +63,7 @@
 
   <div class="settings-section">
     <label>Базовый адрес API</label>
-    <p class="note"><code>https://api.deepseek.com</code> — запросы идут через локальный сервер-прокси этой страницы, ключ никогда не покидает сервер в сторону браузера.</p>
+    <p class="note"><code>https://api.deepseek.com</code> — запросы идут через серверную функцию этой страницы (не напрямую из браузера), ключ никогда не возвращается обратно клиенту.</p>
   </div>
 </aside>
 
