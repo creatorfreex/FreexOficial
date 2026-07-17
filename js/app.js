@@ -32,9 +32,13 @@ function addMessage(role, content, meta, isError) {
   renderChat();
 }
 
-function errorMessageFor(status, rawMessage) {
+function errorMessageFor(status, rawMessage, keySource) {
+  // 401 бывает по двум разным причинам — не путать их местами.
+  if (status === 401 && keySource === 'нет ключа') {
+    return 'Ключ не отправлен на сервер. Откройте ⚙ Настройки, вставьте ключ и нажмите «Использовать в этой вкладке» (просто вписать в поле — недостаточно, нужно ещё нажать кнопку).';
+  }
   const map = {
-    401: 'Неверный API-ключ DeepSeek (401). Проверьте ключ в ⚙ Настройках.',
+    401: 'DeepSeek отклонил ключ как неверный (401). Проверьте, что скопировали ключ целиком, без пробелов.',
     402: 'Недостаточно средств на балансе DeepSeek (402). Пополните баланс аккаунта.',
     429: 'Превышен лимит запросов к DeepSeek (429). Попробуйте через некоторое время.',
     500: 'Временная ошибка сервера DeepSeek (500). Попробуйте ещё раз.',
@@ -85,7 +89,7 @@ async function sendMessage(e) {
     const data = await res.json();
     history.splice(thinkingIdx, 1);
     if (data.error) {
-      addMessage('assistant', errorMessageFor(data.status, data.error), 'источник ключа: ' + (data.keySource || '—'), true);
+      addMessage('assistant', errorMessageFor(data.status, data.error, data.keySource), 'источник ключа: ' + (data.keySource || '—'), true);
     } else {
       addMessage('assistant', data.reply, `${data.model} · ключ: ${data.keySource}`);
     }
@@ -93,11 +97,6 @@ async function sendMessage(e) {
     history.splice(thinkingIdx, 1);
     addMessage('assistant', 'Сеть/сервер недоступны: ' + err.message, null, true);
   }
-}
-
-function newChat() {
-  history = [];
-  renderChat();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -108,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
   el('composerInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
   });
-  el('newChatBtn').onclick = newChat;
 
   el('openSettings').onclick = () => { el('settingsDrawer').classList.add('open'); el('settingsOverlay').classList.add('open'); };
   el('closeSettings').onclick = () => { el('settingsDrawer').classList.remove('open'); el('settingsOverlay').classList.remove('open'); };
