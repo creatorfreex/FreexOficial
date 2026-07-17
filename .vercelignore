@@ -1,0 +1,7 @@
+# server.js — только для локального запуска (node server.js), не для Vercel.
+# Написан в CommonJS (require), а package.json теперь "type":"module" для api/*.js —
+# если Vercel попробует собрать/проанализировать server.js, сборка падает целиком.
+server.js
+server-out.log
+server-err.log
+_screenshots/
