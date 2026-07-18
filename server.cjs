@@ -7,9 +7,10 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+try { process.loadEnvFile(path.join(__dirname, '..', '..', '..', '.env')); } catch {}
+
 const PORT = process.env.DS_CHAT_PORT || 8768;
 const ROOT = __dirname;
-const SECRETS_DIR = path.join(__dirname, '..', '..', 'SECRETS');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -18,12 +19,8 @@ const MIME = {
 };
 
 function readServerKey() {
-  try {
-    const v = fs.readFileSync(path.join(SECRETS_DIR, 'deepseek.key'), 'utf8').trim();
-    return v || null;
-  } catch {
-    return null;
-  }
+  const v = process.env.DEEPSEEK_API_KEY;
+  return v && v.trim() ? v.trim() : null;
 }
 
 function postJson(url, headers, body) {
@@ -60,10 +57,10 @@ async function handleChat(payload) {
   const clientKey = payload.apiKey && String(payload.apiKey).trim();
   const serverKey = readServerKey();
   const apiKey = clientKey || serverKey;
-  const keySource = clientKey ? 'ваш ключ (эта вкладка)' : serverKey ? 'SECRETS/deepseek.key' : 'нет ключа';
+  const keySource = clientKey ? 'ваш ключ (эта вкладка)' : serverKey ? 'DEEPSEEK_API_KEY (.env)' : 'нет ключа';
 
   if (!apiKey) {
-    return { error: 'Нет ключа — ни в этой вкладке, ни в SECRETS/deepseek.key', status: 401, keySource };
+    return { error: 'Нет ключа — ни в этой вкладке, ни в DEEPSEEK_API_KEY (.env)', status: 401, keySource };
   }
 
   const messages = [
@@ -135,6 +132,6 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`FreexOfficial DeepSeek Chat -> http://127.0.0.1:${PORT}/`);
 });

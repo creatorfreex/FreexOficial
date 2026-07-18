@@ -2,3 +2,10 @@ _screenshots/
 server-out.log
 server-err.log
 node_modules/
+
+# Секреты — этот .gitignore отдельный от корневого (свой git-репозиторий), нужен независимо
+*.key
+*.env
+.env.*
+!.env.example
+.vercel/
