@@ -1,6 +1,0 @@
-{
-  "name": "freexofficial-deepseek-chat",
-  "private": true,
-  "type": "module",
-  "description": "ESM marker for api/chat.js and api/health.js on Vercel — без этого файла export default в serverless-функциях падает с FUNCTION_INVOCATION_FAILED"
-}
