@@ -41,6 +41,7 @@
   .logo-stack{ position:relative; display:inline-block; cursor:pointer; }
   #wordmark{
     position:relative; margin:0;
+    transition: opacity 0.16s ease; /* fix «квадраты выскакивают» — плавная смена текста при тапе */
     font-family:"Alex Brush", "Marck Script", "Pinyon Script", "Segoe Script", "Brush Script MT", cursive;
     font-weight:400; font-size:clamp(var(--wm-min, 5.4rem), 28vw, var(--wm-max, 12rem)); line-height:1;
     background:linear-gradient(160deg, var(--word-c1) 0%, var(--word-c2) 22%, var(--word-c3) 46%, var(--word-c4) 70%, var(--word-c5) 100%);
@@ -146,14 +147,24 @@
     wm.style.setProperty('--wm-min', minRem.toFixed(2)+'rem');
     wm.style.setProperty('--wm-max', maxRem.toFixed(2)+'rem');
   }
+  // «квадраты/блоки выскакивают при тапе» — смена textContent на элементе с background-clip:text
+  // может на один кадр показать непрорезанный прямоугольник градиента, пока браузер не
+  // пересчитает клип под новую форму текста. Фикс: гасим слово перед сменой, меняем всё, пока
+  // невидимо, затем плавно проявляем — артефакт физически не успевает попасть в кадр.
+  var torSwapTimer = null;
   function applyVariant(i){
-    variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
-    var v = VARIANTS[variantIndex];
-    GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
-    GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
     var wm = document.getElementById('wordmark');
-    wm.textContent = v.word; wm.setAttribute('data-text', v.word);
-    torSizeWordmark(v.word);
+    wm.style.opacity = '0';
+    clearTimeout(torSwapTimer);
+    torSwapTimer = setTimeout(function(){
+      variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
+      var v = VARIANTS[variantIndex];
+      GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
+      GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
+      wm.textContent = v.word; wm.setAttribute('data-text', v.word);
+      torSizeWordmark(v.word);
+      wm.style.opacity = '1';
+    }, 160);
   }
   applyVariant(0);
   document.getElementById('logoStack').addEventListener('click', function(){
