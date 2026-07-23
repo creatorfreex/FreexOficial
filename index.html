@@ -42,7 +42,7 @@
   #wordmark{
     position:relative; margin:0;
     font-family:"Alex Brush", "Marck Script", "Pinyon Script", "Segoe Script", "Brush Script MT", cursive;
-    font-weight:400; font-size:clamp(5.4rem, 28vw, 12rem); line-height:1;
+    font-weight:400; font-size:clamp(var(--wm-min, 5.4rem), 28vw, var(--wm-max, 12rem)); line-height:1;
     background:linear-gradient(160deg, var(--word-c1) 0%, var(--word-c2) 22%, var(--word-c3) 46%, var(--word-c4) 70%, var(--word-c5) 100%);
     -webkit-background-clip:text; background-clip:text;
     color:transparent; -webkit-text-fill-color:transparent;
@@ -98,7 +98,7 @@
   <div class="screen">
     <div class="screen-inner">
       <div class="logo-stack" id="logoStack">
-        <h1 id="wordmark" data-text="Best">Best</h1>
+        <h1 id="wordmark" data-text="Hit.parad.official">Hit.parad.official</h1>
         <span class="logo-spark" aria-hidden="true"></span>
         <span class="logo-spark" aria-hidden="true"></span>
         <span class="logo-spark" aria-hidden="true"></span>
@@ -124,20 +124,36 @@
   window.addEventListener('resize', torResize);
   torResize();
 
-  // два подтверждённых варианта: тап по слову переключает между ними
+  // 6 подтверждённых направлений (то же множество, что в приватном Пульте на данный момент) —
+  // тап по слову переключает по кругу в этом порядке
   var VARIANTS = [
-    { word:'Best', ring:{ core:'255,244,176', bright:'255,216,74', gold:'255,179,0', amber:'242,138,0', amberDark:'185,90,0', bronze:'90,38,0' } },
-    { word:'Aleorix', ring:{ core:'242,222,232', bright:'249,118,184', gold:'253,33,143', amber:'211,9,110', amberDark:'142,11,77', bronze:'65,11,38' } }
+    { word:'Hit.parad.official', ring:{ core:'242,240,222', bright:'249,232,118', gold:'253,223,33', amber:'211,184,9', amberDark:'142,125,11', bronze:'65,58,11' } },
+    { word:'Valmont', ring:{ core:'255,225,215', bright:'255,90,90', gold:'230,25,25', amber:'178,14,14', amberDark:'120,8,8', bronze:'50,3,3' } },
+    { word:'Animix', ring:{ core:'230,222,242', bright:'173,118,249', gold:'124,33,253', amber:'93,9,211', amberDark:'66,11,142', bronze:'34,11,65' } },
+    { word:'Aleorix', ring:{ core:'242,222,232', bright:'249,118,184', gold:'253,33,143', amber:'211,9,110', amberDark:'142,11,77', bronze:'65,11,38' } },
+    { word:'Jelly', ring:{ core:'255,230,150', bright:'224,178,80', gold:'184,134,11', amber:'139,101,8', amberDark:'92,64,5', bronze:'40,28,2' } },
+    { word:'BestOfficial', ring:{ core:'255,244,176', bright:'255,216,74', gold:'255,179,0', amber:'242,138,0', amberDark:'185,90,0', bronze:'90,38,0' } }
   ];
   var GT = { core:'', bright:'', gold:'', amber:'', amberDark:'', bronze:'' };
   var variantIndex = 0;
+  // размер шрифта считается по длине слова — «Hit.parad.official» (19 букв) иначе вылезает
+  // далеко за кольцо, если использовать тот же максимум, что и «Jelly» (5 букв)
+  function torSizeWordmark(text){
+    var len = Math.max(String(text).length, 1);
+    var f = Math.pow(4/len, 0.7);
+    var minRem = Math.max(1.6, 5.4*f), maxRem = Math.max(minRem+0.4, 12*f);
+    var wm = document.getElementById('wordmark');
+    wm.style.setProperty('--wm-min', minRem.toFixed(2)+'rem');
+    wm.style.setProperty('--wm-max', maxRem.toFixed(2)+'rem');
+  }
   function applyVariant(i){
-    variantIndex = i % VARIANTS.length;
+    variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
     var v = VARIANTS[variantIndex];
     GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
     GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
     var wm = document.getElementById('wordmark');
     wm.textContent = v.word; wm.setAttribute('data-text', v.word);
+    torSizeWordmark(v.word);
   }
   applyVariant(0);
   document.getElementById('logoStack').addEventListener('click', function(){
