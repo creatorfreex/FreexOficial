@@ -13,7 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Marck+Script&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#070502; --parchment:#cdc2a8; --gold-dim:#8a651f;
+    --ink:#070502; --parchment:#cdc2a8; --line:#2b210f; --gold-dim:#8a651f; --gold-bright:#f6dd9a;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
     --word-c1:#fff8d0; --word-c2:#fff1a8; --word-c3:#ffc928; --word-c4:#d99a00; --word-c5:#8a4e00;
     --word-glow1: rgba(255,241,168,0.9); --word-glow2: rgba(255,201,40,0.55); --word-glow3: rgba(217,154,0,0.4);
   }
@@ -39,14 +40,22 @@
   .screen-inner{ position:relative; z-index:2; width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; gap:1.1rem; }
 
   .logo-stack{ position:relative; display:inline-block; cursor:pointer; }
+  /* «зеркальность в буквах» — чередование ярких/тёмных полос (грань полированного металла ловит
+     и теряет свет несколько раз), не один плавный переход — тот же приём, что рисует «chrome text» */
   #wordmark{
     position:relative; margin:0;
+    transition: opacity 0.16s ease;
     font-family:"Alex Brush", "Marck Script", "Pinyon Script", "Segoe Script", "Brush Script MT", cursive;
     font-weight:400; font-size:clamp(var(--wm-min, 5.4rem), 28vw, var(--wm-max, 12rem)); line-height:1;
-    background:linear-gradient(160deg, var(--word-c1) 0%, var(--word-c2) 22%, var(--word-c3) 46%, var(--word-c4) 70%, var(--word-c5) 100%);
+    background:linear-gradient(160deg,
+      var(--word-c1) 0%, #fffef2 6%, var(--word-c2) 14%,
+      var(--word-c4) 27%, #6b3900 36%,
+      #fffef2 46%, var(--word-c3) 56%,
+      var(--word-c5) 68%, #5a3200 76%,
+      #fff6d8 86%, var(--word-c3) 94%, var(--word-c5) 100%);
     -webkit-background-clip:text; background-clip:text;
     color:transparent; -webkit-text-fill-color:transparent;
-    -webkit-text-stroke: 0.6px rgba(90,50,0,0.45);
+    -webkit-text-stroke: 0.6px rgba(60,32,0,0.6);
     filter:
       drop-shadow(0 0 3px var(--word-glow1))
       drop-shadow(0 0 16px var(--word-glow2))
@@ -89,6 +98,20 @@
     #wordmark, #wordmark::after{ animation:none; }
     .logo-spark{ animation:none; opacity:0; }
   }
+
+  .tiktok-link{
+    display:inline-block; margin-top:0.6rem; font-family:var(--mono); font-size:0.72rem;
+    letter-spacing:0.06em; color:var(--gold-dim); text-decoration:none; border:1px solid var(--line);
+    border-radius:999px; padding:0.35rem 0.85rem; transition: color .2s ease, border-color .2s ease;
+  }
+  .tiktok-link:hover, .tiktok-link:focus-visible{ color:var(--gold-bright); border-color:var(--gold-dim); outline:none; }
+
+  /* статичная метка — не кнопка, нельзя нажать, не показывает список изменений */
+  .release-tag{
+    position:absolute; bottom:0.7rem; left:0; right:0; text-align:center; z-index:5;
+    font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--gold-dim); opacity:0.6; user-select:none;
+  }
 </style>
 </head>
 <body>
@@ -103,8 +126,10 @@
         <span class="logo-spark" aria-hidden="true"></span>
         <span class="logo-spark" aria-hidden="true"></span>
       </div>
+      <a class="tiktok-link" id="tiktokLink" href="#" target="_blank" rel="noopener" style="display:none">↗ TikTok</a>
     </div>
   </div>
+  <div class="release-tag">Релиз 2</div>
 </div>
 
 <script>
@@ -124,20 +149,45 @@
   window.addEventListener('resize', torResize);
   torResize();
 
-  // 6 подтверждённых направлений (то же множество, что в приватном Пульте на данный момент) —
-  // тап по слову переключает по кругу в этом порядке
-  var VARIANTS = [
-    { word:'Hit.parad.official', ring:{ core:'242,240,222', bright:'249,232,118', gold:'253,223,33', amber:'211,184,9', amberDark:'142,125,11', bronze:'65,58,11' } },
-    { word:'Valmont', ring:{ core:'255,225,215', bright:'255,90,90', gold:'230,25,25', amber:'178,14,14', amberDark:'120,8,8', bronze:'50,3,3' } },
-    { word:'Animix', ring:{ core:'230,222,242', bright:'173,118,249', gold:'124,33,253', amber:'93,9,211', amberDark:'66,11,142', bronze:'34,11,65' } },
-    { word:'Aleorix', ring:{ core:'242,222,232', bright:'249,118,184', gold:'253,33,143', amber:'211,9,110', amberDark:'142,11,77', bronze:'65,11,38' } },
-    { word:'Jelly', ring:{ core:'255,230,150', bright:'224,178,80', gold:'184,134,11', amber:'139,101,8', amberDark:'92,64,5', bronze:'40,28,2' } },
-    { word:'BestOfficial', ring:{ core:'255,244,176', bright:'255,216,74', gold:'255,179,0', amber:'242,138,0', amberDark:'185,90,0', bronze:'90,38,0' } }
-  ];
+  var GT_OUTER = 0.40, GT_INNER = 0.55;
   var GT = { core:'', bright:'', gold:'', amber:'', amberDark:'', bronze:'' };
-  var variantIndex = 0;
-  // размер шрифта считается по длине слова — «Hit.parad.official» (19 букв) иначе вылезает
-  // далеко за кольцо, если использовать тот же максимум, что и «Jelly» (5 букв)
+
+  // 30 подтверждённых направлений (снимок TOR_COLORS.json на момент публикации) — тап по слову
+  // переключает по кругу. Полный список с 40+ направлениями, панелью настроек и API — только в
+  // приватном Пульте (control/best-vision.html), эта копия — публичный срез, без служебного.
+  var VARIANTS = [
+    { word:'Hit.parad.official', ring:{core:'242,240,222',bright:'249,232,118',gold:'253,223,33',amber:'211,184,9',amberDark:'142,125,11',bronze:'65,58,11'}, tiktok:'best.my.stars' },
+    { word:'Valmont', ring:{core:'255,225,215',bright:'255,90,90',gold:'230,25,25',amber:'178,14,14',amberDark:'120,8,8',bronze:'50,3,3'}, tiktok:'best.valmont.man' },
+    { word:'Animix', ring:{core:'230,222,242',bright:'173,118,249',gold:'124,33,253',amber:'93,9,211',amberDark:'66,11,142',bronze:'34,11,65'}, tiktok:'best.anime.show' },
+    { word:'Fovela', ring:{core:'220,220,228',bright:'150,150,160',gold:'95,95,108',amber:'58,58,70',amberDark:'32,32,42',bronze:'10,10,15'}, tiktok:'best_fovela' },
+    { word:'Aleorix', ring:{core:'244,221,244',bright:'251,116,251',gold:'253,33,253',amber:'214,5,214',amberDark:'145,8,145',bronze:'67,10,67'}, tiktok:'aleorix0' },
+    { word:'Jelly', ring:{core:'255,230,150',bright:'224,178,80',gold:'184,134,11',amber:'139,101,8',amberDark:'92,64,5',bronze:'40,28,2'}, tiktok:'jelly.show' },
+    { word:'Vanila', ring:{core:'221,244,234',bright:'116,251,198',gold:'33,253,166',amber:'5,214,131',amberDark:'8,145,91',bronze:'10,67,44'}, tiktok:'best.vanila.show' },
+    { word:'Рок', ring:{core:'221,244,243',bright:'116,251,250',gold:'33,253,251',amber:'5,214,212',amberDark:'8,145,144',bronze:'10,67,66'}, tiktok:'best.rock.party' },
+    { word:'Tiretok', ring:{core:'221,239,244',bright:'116,226,251',gold:'33,212,253',amber:'5,175,214',amberDark:'8,120,145',bronze:'10,56,67'}, tiktok:'best.tiretok' },
+    { word:'Детский', ring:{core:'250,251,255',bright:'236,239,246',gold:'214,217,226',amber:'176,180,192',amberDark:'118,122,134',bronze:'40,40,52'}, tiktok:'best.children.show' },
+    { word:'Voice', ring:{core:'221,230,244',bright:'116,174,251',gold:'33,127,253',amber:'5,94,214',amberDark:'8,66,145',bronze:'10,34,67'}, tiktok:'best.voice.show' },
+    { word:'Coffee', ring:{core:'221,226,244',bright:'116,147,251',gold:'33,84,253',amber:'5,54,214',amberDark:'8,40,145',bronze:'10,23,67'}, tiktok:'best.coffee.show' },
+    { word:'ISR', ring:{core:'221,222,244',bright:'116,121,251',gold:'33,42,253',amber:'5,14,214',amberDark:'8,13,145',bronze:'10,12,67'}, tiktok:'best.isr.show' },
+    { word:'Dream', ring:{core:'222,242,229',bright:'118,249,166',gold:'33,253,113',amber:'9,211,83',amberDark:'11,142,59',bronze:'11,65,31'}, tiktok:'best.dream.show' },
+    { word:'Dualis', ring:{core:'230,222,242',bright:'173,118,249',gold:'124,33,253',amber:'93,9,211',amberDark:'66,11,142',bronze:'34,11,65'}, tiktok:'best.duet.show' },
+    { word:'Zaryum', ring:{core:'233,221,244',bright:'189,116,251',gold:'152,33,253',amber:'118,5,214',amberDark:'82,8,145',bronze:'41,10,67'}, youtube:'https://youtube.com/playlist?list=PLuaNqEUb7SmVnWfr6seNIC_8uMPZSc-Xd&si=qD9XmHhjlJAXmM7o' },
+    { word:'Noira', ring:{core:'221,221,244',bright:'116,116,251',gold:'33,33,253',amber:'5,5,214',amberDark:'8,8,145',bronze:'10,10,67'}, youtube:'https://youtube.com/playlist?list=PLuaNqEUb7SmXUdZlHeY4HgbE29TWwfTiW&si=UX7SENnSpwrlf61F' },
+    { word:'Nerix', ring:{core:'221,244,221',bright:'116,251,116',gold:'33,253,33',amber:'5,214,5',amberDark:'8,145,8',bronze:'10,67,10'}, tiktok:'best.comedy.show' },
+    { word:'Moon', ring:{core:'221,244,221',bright:'116,251,116',gold:'33,253,33',amber:'5,214,5',amberDark:'8,145,8',bronze:'10,67,10'}, tiktok:'best.moon.show' },
+    { word:'Grand Show', ring:{core:'244,221,221',bright:'251,116,116',gold:'253,33,33',amber:'214,5,5',amberDark:'145,8,8',bronze:'67,10,10'}, tiktok:'best.grand.show' },
+    { word:'Dostar', ring:{core:'244,221,232',bright:'251,116,182',gold:'253,33,141',amber:'214,5,108',amberDark:'145,8,75',bronze:'67,10,38'}, tiktok:'best.dostar.show' },
+    { word:'Tune', ring:{core:'244,221,227',bright:'251,116,156',gold:'253,33,98',amber:'214,5,67',amberDark:'145,8,48',bronze:'67,10,27'}, tiktok:'best.tune.show' },
+    { word:'Anibrox', ring:{core:'244,221,223',bright:'251,116,130',gold:'253,33,56',amber:'214,5,27',amberDark:'145,8,22',bronze:'67,10,16'}, tiktok:'best.anibrox' },
+    { word:'Exclusive Stars', ring:{core:'221,244,221',bright:'116,251,116',gold:'33,253,33',amber:'5,214,5',amberDark:'8,145,8',bronze:'10,67,10'}, tiktok:'best.exclusive.stars' },
+    { word:'News', ring:{core:'221,232,244',bright:'116,183,251',gold:'33,142,253',amber:'5,109,214',amberDark:'8,76,145',bronze:'10,38,67'}, tiktok:'best.news.show' },
+    { word:'Finger Dance', ring:{core:'244,231,221',bright:'251,180,116',gold:'253,137,33',amber:'214,104,5',amberDark:'145,73,8',bronze:'67,37,10'}, tiktok:'best.finger.dance' },
+    { word:'Past Legends', ring:{core:'244,236,221',bright:'251,206,116',gold:'253,180,33',amber:'214,145,5',amberDark:'145,100,8',bronze:'67,48,10'}, tiktok:'best.past.legends' },
+    { word:'Arhiv', ring:{core:'244,240,221',bright:'251,233,116',gold:'253,223,33',amber:'214,185,5',amberDark:'145,127,8',bronze:'67,59,10'}, tiktok:'best.arhiv.show' },
+    { word:'BestChat', ring:{core:'242,244,221',bright:'243,251,116',gold:'240,253,33',amber:'202,214,5',amberDark:'137,145,8',bronze:'64,67,10'} },
+    { word:'BestOfficial', ring:{core:'255,244,176',bright:'255,216,74',gold:'255,179,0',amber:'242,138,0',amberDark:'185,90,0',bronze:'90,38,0'}, tiktok:'best.show.official' }
+  ];
+
   function torSizeWordmark(text){
     var len = Math.max(String(text).length, 1);
     var f = Math.pow(4/len, 0.7);
@@ -146,14 +196,28 @@
     wm.style.setProperty('--wm-min', minRem.toFixed(2)+'rem');
     wm.style.setProperty('--wm-max', maxRem.toFixed(2)+'rem');
   }
+
+  var variantIndex = 0;
+  var wmSwapTimer = null;
   function applyVariant(i){
     variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
     var v = VARIANTS[variantIndex];
     GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
     GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
+
     var wm = document.getElementById('wordmark');
-    wm.textContent = v.word; wm.setAttribute('data-text', v.word);
-    torSizeWordmark(v.word);
+    wm.style.opacity = '0';
+    clearTimeout(wmSwapTimer);
+    wmSwapTimer = setTimeout(function(){
+      wm.textContent = v.word; wm.setAttribute('data-text', v.word);
+      torSizeWordmark(v.word);
+      wm.style.opacity = '1';
+    }, 160);
+
+    var link = document.getElementById('tiktokLink');
+    if(v.youtube){ link.href = v.youtube; link.textContent = '↗ YouTube'; link.style.display = ''; }
+    else if(v.tiktok){ link.href = 'https://www.tiktok.com/@'+v.tiktok; link.textContent = '↗ @'+v.tiktok; link.style.display = ''; }
+    else { link.style.display = 'none'; }
   }
   applyVariant(0);
   document.getElementById('logoStack').addEventListener('click', function(){
@@ -161,16 +225,16 @@
   });
 
   var torStrands = [];
-  var STRAND_N = 14;
+  var STRAND_N = 18;
   for(var si=0; si<STRAND_N; si++){
     var spread = si/(STRAND_N-1);
     torStrands.push({
-      pos: 0.5 + (spread - 0.5) * 0.68,
+      pos: 0.5 + (spread - 0.5) * 0.80,
       freq: 3 + Math.floor(seeded(si+7)*3),
       wob: 0.07 + seeded(si+13)*0.11,
       phase: seeded(si+21)*Math.PI*2,
-      width: 2.3 + seeded(si+29)*3.8,
-      alpha: 0.56 + seeded(si+37)*0.40,
+      width: 2.0 + seeded(si+29)*3.4,
+      alpha: 0.52 + seeded(si+37)*0.38,
       colorStep: si
     });
   }
@@ -179,8 +243,30 @@
     return stops[step % stops.length];
   }
 
+  // «гостевые» нити — цвета других подтверждённых направлений семьи, тихий акцент поверх золота
+  var FAMILY_ACCENT_COLORS = [
+    { core:'249,232,118', bright:'253,223,33' },
+    { core:'255,225,215', bright:'230,25,25' },
+    { core:'230,222,242', bright:'124,33,253' },
+    { core:'214,242,220', bright:'0,168,84' },
+    { core:'255,230,150', bright:'184,134,11' }
+  ];
+  var torFamilyStrands = [];
+  var FAMILY_N = reduced ? 0 : FAMILY_ACCENT_COLORS.length;
+  for(var fi=0; fi<FAMILY_N; fi++){
+    torFamilyStrands.push({
+      pos: 0.06 + fi*(0.9/(FAMILY_N-1||1)),
+      freq: 2 + Math.floor(seeded(fi+200)*3),
+      wob: 0.09 + seeded(fi+213)*0.13,
+      phase: seeded(fi+221)*Math.PI*2,
+      width: 1.1 + seeded(fi+229)*1.1,
+      alpha: 0.16 + seeded(fi+237)*0.14,
+      color: FAMILY_ACCENT_COLORS[fi]
+    });
+  }
+
   var torWisps = [];
-  var torWispN = reduced ? 0 : 10;
+  var torWispN = reduced ? 0 : 14;
   for(var wi=0; wi<torWispN; wi++){
     torWisps.push({ angle: seeded(wi+51)*Math.PI*2, len: 0.10+seeded(wi+59)*0.16, curve: 0.4+seeded(wi+67)*0.5, speed: 0.00004+seeded(wi+73)*0.00006 });
   }
@@ -194,7 +280,7 @@
   function torDraw(t){
     tctx.clearRect(0,0,tw,th);
     var cx=tw/2, cy=th/2, minDim = Math.min(tw,th);
-    var outerR = minDim*0.40, innerR = outerR*0.55;
+    var outerR = minDim*GT_OUTER, innerR = outerR*GT_INNER;
     var bandHalf = (outerR-innerR)/2;
     var rotT = t*0.00031;
 
@@ -203,7 +289,6 @@
     bloom.addColorStop(0,'rgba('+GT.core+',0.38)'); bloom.addColorStop(1,'rgba('+GT.core+',0)');
     tctx.fillStyle = bloom; tctx.beginPath(); tctx.arc(blx,bly,outerR*0.55,0,Math.PI*2); tctx.fill();
 
-    // тонкая идеальная ось-окружность на среднем радиусе, вокруг которой кружатся волны
     tctx.save();
     tctx.strokeStyle = 'rgba('+GT.bright+',0.16)';
     tctx.lineWidth = 1.1;
@@ -215,6 +300,8 @@
     torStrands.forEach(function(s){
       var segs = 110;
       var r0 = innerR + bandHalf*2*s.pos;
+      var taper = 1.12 - s.pos*0.7;
+      var tw_ = s.width*taper, ta_ = s.alpha*taper;
       tctx.beginPath();
       for(var seg=0; seg<=segs; seg++){
         var ang = (seg/segs)*Math.PI*2;
@@ -226,26 +313,47 @@
       tctx.save();
       tctx.shadowColor = 'rgba('+GT.bright+',0.55)';
       tctx.shadowBlur = 3;
-      tctx.strokeStyle = 'rgba('+torStrandColor(s.colorStep)+','+(s.alpha*0.35).toFixed(3)+')';
-      tctx.lineWidth = s.width*3.2;
+      tctx.strokeStyle = 'rgba('+torStrandColor(s.colorStep)+','+(ta_*0.35).toFixed(3)+')';
+      tctx.lineWidth = tw_*2.6;
       tctx.stroke();
       tctx.restore();
 
       tctx.save();
       tctx.globalCompositeOperation = 'lighter';
       tctx.shadowColor = 'rgba('+GT.bright+',0.9)';
-      tctx.shadowBlur = 17;
-      tctx.strokeStyle = 'rgba('+torStrandColor(s.colorStep)+','+s.alpha+')';
-      tctx.lineWidth = s.width;
+      tctx.shadowBlur = 13;
+      tctx.strokeStyle = 'rgba('+torStrandColor(s.colorStep)+','+ta_.toFixed(3)+')';
+      tctx.lineWidth = tw_;
       tctx.stroke();
       tctx.restore();
 
-      var shine = 0.10 + 0.22*Math.max(0, Math.sin(t*0.0009 + s.phase*1.7));
+      var shine = (0.10 + 0.22*Math.max(0, Math.sin(t*0.0009 + s.phase*1.7))) * taper;
       tctx.save();
       tctx.shadowColor = 'rgba('+GT.core+',0.95)';
       tctx.shadowBlur = 10;
       tctx.strokeStyle = 'rgba('+GT.core+','+shine.toFixed(3)+')';
-      tctx.lineWidth = s.width*0.45;
+      tctx.lineWidth = tw_*0.45;
+      tctx.stroke();
+      tctx.restore();
+    });
+
+    torFamilyStrands.forEach(function(s){
+      var segs = 90;
+      var r0 = innerR + bandHalf*2*s.pos;
+      tctx.beginPath();
+      for(var seg=0; seg<=segs; seg++){
+        var ang = (seg/segs)*Math.PI*2;
+        var wob = Math.sin(ang*s.freq + s.phase + rotT*0.7) * bandHalf * s.wob;
+        var r = r0 + wob;
+        var x = cx + Math.cos(ang)*r, y = cy + Math.sin(ang)*r*0.985;
+        if(seg===0) tctx.moveTo(x,y); else tctx.lineTo(x,y);
+      }
+      tctx.save();
+      tctx.globalCompositeOperation = 'lighter';
+      tctx.shadowColor = 'rgba('+s.color.bright+',0.5)';
+      tctx.shadowBlur = 6;
+      tctx.strokeStyle = 'rgba('+s.color.bright+','+s.alpha.toFixed(3)+')';
+      tctx.lineWidth = s.width;
       tctx.stroke();
       tctx.restore();
     });
