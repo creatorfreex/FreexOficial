@@ -153,14 +153,19 @@
   // невидимо, затем плавно проявляем — артефакт физически не успевает попасть в кадр.
   var torSwapTimer = null;
   function applyVariant(i){
+    // баг (23.07): GT.core и т.д. раньше выставлялись ТОЛЬКО внутри setTimeout — canvas-цикл
+    // (requestAnimationFrame) успевал нарисовать первый кадр с пустыми ''-цветами до того, как
+    // таймер сработает → rgba('',0.38) невалиден → canvas молча падает на чёрный → «нет тора,
+    // только шрифт». Цвет кольца теперь применяется сразу; задержка — только у текста/DOM,
+    // единственное место, где реально был риск «квадрата» на background-clip:text.
+    variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
+    var v = VARIANTS[variantIndex];
+    GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
+    GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
     var wm = document.getElementById('wordmark');
     wm.style.opacity = '0';
     clearTimeout(torSwapTimer);
     torSwapTimer = setTimeout(function(){
-      variantIndex = ((i % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
-      var v = VARIANTS[variantIndex];
-      GT.core=v.ring.core; GT.bright=v.ring.bright; GT.gold=v.ring.gold;
-      GT.amber=v.ring.amber; GT.amberDark=v.ring.amberDark; GT.bronze=v.ring.bronze;
       wm.textContent = v.word; wm.setAttribute('data-text', v.word);
       torSizeWordmark(v.word);
       wm.style.opacity = '1';
